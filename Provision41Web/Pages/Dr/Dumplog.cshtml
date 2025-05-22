@@ -1,0 +1,146 @@
+@page "/dr/dumplog"
+@model Provision41Web.Pages.Dr.DumplogModel
+@{
+    ViewData["Title"] = "Dump Log";
+}
+
+<div class="container mt-4">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold">🚛 Provision41 Disaster Recovery</h2>
+        <p class="text-muted">Dump Log Form</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+        <h4 id="formHeader" class="text-primary mb-4"></h4>
+        <input type="hidden" asp-for="Id" />
+
+        <div class="row mb-3">
+            <label class="col-4 col-form-label">Date:</label>
+            <div class="col-8">
+                <input type="text" class="form-control" value="@Model.Timestamp" readonly />
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <label asp-for="CompanyName" class="col-4 col-form-label">Company Name:</label>
+            <div class="col-8">
+                <input asp-for="CompanyName" class="form-control" />
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <label asp-for="TruckId" class="col-4 col-form-label">Truck ID:</label>
+            <div class="col-8">
+                <input asp-for="TruckId" class="form-control" />
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <label asp-for="MaxCapacity" class="col-4 col-form-label">Max Capacity:</label>
+            <div class="col-8">
+                <input asp-for="MaxCapacity" type="number" class="form-control" />
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <label asp-for="CurrentCapacity" class="col-4 col-form-label">Current Capacity (%):</label>
+            <div class="col-8">
+                <div class="input-group">
+                    <input asp-for="CurrentCapacity" type="number" min="0" max="100" class="form-control" id="currentCapacityInput" />
+                    <span class="input-group-text">%</span>
+                </div>
+                <div id="currentCapacityLbs" class="form-text text-muted mt-1" style="display: none;"></div>
+            </div>
+        </div>
+        <div class="row mb-3 align-items-center">
+            <label class="col-4 col-form-label">Type:</label>
+            <div class="col-8 d-flex gap-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" asp-for="Type" value="C&D" />
+                    <label class="form-check-label">C&D</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" asp-for="Type" value="VEG" />
+                    <label class="form-check-label">VEG</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" asp-for="Type" value="HAZMAT" />
+                    <label class="form-check-label">HAZMAT</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <label asp-for="Comments" class="col-4 col-form-label">Comments:</label>
+            <div class="col-8">
+                <textarea asp-for="Comments" class="form-control" rows="3"></textarea>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <label asp-for="UploadedFiles" class="col-4 col-form-label">Upload Photos:</label>
+            <div class="col-8">
+                <input asp-for="UploadedFiles" type="file" multiple class="form-control" />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="offset-4 col-8">
+                <button type="submit" class="btn btn-primary w-100">Save Entry</button>
+            </div>
+        </div>
+    </form>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const maxCapacityInput = document.querySelector('input[name="MaxCapacity"]');
+            const currentCapacityInput = document.getElementById('currentCapacityInput');
+            const truckIdInput = document.querySelector('input[name="TruckId"]');
+            const outputDiv = document.getElementById('currentLoadOutput');
+            const formHeader = document.getElementById('formHeader');
+
+            function getTruckIdFromUrl() {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('id') || '';
+            }
+
+            function updateHeader(truckId) {
+                formHeader.textContent = truckId
+                    ? `Dump Log for Truck #${truckId}`
+                    : `Dump Log`;
+            }
+
+            function updateLoadDisplay() {
+                const max = parseFloat(maxCapacityInput.value);
+                const currentPct = parseFloat(currentCapacityInput.value);
+                const truckId = truckIdInput.value?.trim();
+
+                if (!isNaN(max) && !isNaN(currentPct)) {
+                    const currentLbs = (max * currentPct / 100).toFixed(2);
+                    const label = truckId ? ` for Truck #${truckId}` : '';
+                    outputDiv.textContent = `Current load${label}: ${currentLbs} lbs`;
+                    outputDiv.style.display = 'block';
+                } else {
+                    outputDiv.style.display = 'none';
+                }
+            }
+
+            // Initialize form with URL truck ID
+            const initialTruckId = getTruckIdFromUrl();
+            if (initialTruckId) {
+                truckIdInput.value = initialTruckId;
+                truckIdInput.readOnly = true;
+                truckIdInput.classList.add('bg-light'); // optional: gray out visually
+            }
+
+
+            updateHeader(initialTruckId);
+
+            truckIdInput.addEventListener('input', () => {
+                updateHeader(truckIdInput.value.trim());
+            });
+
+            currentCapacityInput.addEventListener('blur', updateLoadDisplay);
+        });
+    </script>
+
+</div>
