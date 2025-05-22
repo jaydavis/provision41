@@ -21,15 +21,25 @@ class Program
         var sqlAdminUser = config.Require("sqladminuser");
         var sqlAdminPassword = config.RequireSecret("sqladminpassword");
 
+        // Names
+        var rgName = $"provision41-{env}-rg";
+        var storageName = $"provision41{env}sa";
+        var sqlServerName = $"provision41-{env}-sql";
+        var sqlDbName = $"provision41-{env}-db";
+        var kvName = $"provision41{env}kv";
+        var appPlanName = $"provision41-{env}-appplan";
+        var webAppName = $"provision41-{env}-webapp";
+
         // Resource Group
-        var rg = new ResourceGroup($"p41-{env}-rg", new ResourceGroupArgs
+        var rg = new ResourceGroup($"provision41-{env}-rg", new ResourceGroupArgs
         {
             Location = location
         });
 
         // Storage Account
-        var storage = new StorageAccount($"p41{env}sa", new StorageAccountArgs
+        var storage = new StorageAccount($"provision41{env}sa", new StorageAccountArgs
         {
+            Name = storageName,
             ResourceGroupName = rg.Name,
             Location = location,
             Sku = new Pulumi.AzureNative.Storage.Inputs.SkuArgs
@@ -47,7 +57,7 @@ class Program
         });
 
         // SQL Server
-        var sqlServer = new Server($"p41-{env}-sql", new ServerArgs
+        var sqlServer = new Server($"provision41-{env}-sql", new ServerArgs
         {
             ResourceGroupName = rg.Name,
             Location = location,
@@ -56,8 +66,9 @@ class Program
             Version = "12.0"
         });
 
-        var sqlDb = new Database($"p41-{env}-db", new DatabaseArgs
+        var sqlDb = new Database($"provision41-{env}-db", new DatabaseArgs
         {
+            Location = location,
             ResourceGroupName = rg.Name,
             ServerName = sqlServer.Name,
             Sku = new Pulumi.AzureNative.Sql.Inputs.SkuArgs
@@ -65,10 +76,14 @@ class Program
                 Name = "S0",
                 Tier = "Standard"
             }
+        }, new CustomResourceOptions
+        {
+            DependsOn = { sqlServer } 
         });
 
+
         // Key Vault
-        var kv = new Vault($"p41-{env}-kv", new VaultArgs
+        var kv = new Vault($"provision41{env}kv", new VaultArgs
         {
             ResourceGroupName = rg.Name,
             Location = location,
@@ -100,7 +115,7 @@ class Program
         });
 
         // Key Vault Secrets
-        var secretUser = new Secret($"p41-sqladminuser", new SecretArgs
+        var secretUser = new Secret("sqladminuser", new SecretArgs
         {
             ResourceGroupName = rg.Name,
             VaultName = kv.Name,
@@ -110,7 +125,7 @@ class Program
             }
         });
 
-        var secretPwd = new Secret($"provision41-sqladminpassword", new SecretArgs
+        var secretPwd = new Secret($"sqladminpassword", new SecretArgs
         {
             ResourceGroupName = rg.Name,
             VaultName = kv.Name,
@@ -120,13 +135,47 @@ class Program
             }
         });
 
-        var secretConnStr = new Secret($"provision41-sqlconnectionstring", new SecretArgs
+        var secretConnStr = new Secret($"sqlconnectionstring", new SecretArgs
         {
             ResourceGroupName = rg.Name,
             VaultName = kv.Name,
             Properties = new SecretPropertiesArgs
             {
                 Value = sqlConnectionString
+            }
+        });
+
+        // App Service Plan
+        var appServicePlan = new Pulumi.AzureNative.Web.AppServicePlan($"provision41-{env}-plan", new Pulumi.AzureNative.Web.AppServicePlanArgs
+        {
+            Name = appPlanName,
+            ResourceGroupName = rg.Name,
+            Location = location,
+            Kind = "App",
+            Sku = new Pulumi.AzureNative.Web.Inputs.SkuDescriptionArgs
+            {
+                Name = "B1",
+                Tier = "Basic"
+            }
+        });
+
+        // Web App
+        var webApp = new Pulumi.AzureNative.Web.WebApp($"provision41-{env}-webapp", new Pulumi.AzureNative.Web.WebAppArgs
+        {
+            Name = webAppName,
+            ResourceGroupName = rg.Name,
+            Location = location,
+            ServerFarmId = appServicePlan.Id,
+            SiteConfig = new Pulumi.AzureNative.Web.Inputs.SiteConfigArgs
+            {
+                AppSettings = new[]
+                {
+                    new Pulumi.AzureNative.Web.Inputs.NameValuePairArgs
+                    {
+                        Name = "WEBSITE_RUN_FROM_PACKAGE",
+                        Value = "1"
+                    }
+                }
             }
         });
 
@@ -137,7 +186,8 @@ class Program
             ["sqlServer"] = sqlServer.Name,
             ["sqlDatabase"] = sqlDb.Name,
             ["blobUrl"] = Output.Format($"https://{storage.Name}.blob.core.windows.net/{container.Name}"),
-            ["keyVault"] = kv.Name
+            ["keyVault"] = kv.Name,
+            ["webAppUrl"] = Output.Format($"https://{webApp.DefaultHostName}")
         };
     });
 }

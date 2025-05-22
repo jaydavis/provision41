@@ -1,7 +1,2 @@
-config:
-  azure-native:location: EastUS
-  provision41:location: eastus
-  provision41:tenantId: 469b7b58-bd29-4b05-8246-9567770f2588
-  provision41:sqladminuser: sqladmin
-  provision41:sqladminpassword:
-    secure: AAABADJwAIikJukoxS+SOWFfri0SRFcVNlgngUjQZ9lp9f1qiFQqK+3dPp1jVkm19o7pAw==
+environment:
+  - provision41/dev
