@@ -6,6 +6,9 @@ using Pulumi.AzureNative.Sql;
 using Pulumi.AzureNative.Sql.Inputs;
 using Pulumi.AzureNative.KeyVault;
 using Pulumi.AzureNative.KeyVault.Inputs;
+using Pulumi.AzureNative.Web;
+using Pulumi.AzureNative.Web.Inputs;
+
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -27,19 +30,20 @@ class Program
         var sqlServerName = $"provision41-{env}-sql";
         var sqlDbName = $"provision41-{env}-db";
         var kvName = $"provision41{env}kv";
-        var appPlanName = $"provision41-{env}-appplan";
+        var appPlanName = $"provision41-{env}-sp";
         var webAppName = $"provision41-{env}-webapp";
 
         // Resource Group
         var rg = new ResourceGroup($"provision41-{env}-rg", new ResourceGroupArgs
         {
+            ResourceGroupName = rgName,
             Location = location
         });
 
         // Storage Account
         var storage = new StorageAccount($"provision41{env}sa", new StorageAccountArgs
         {
-            Name = storageName,
+            AccountName = storageName,
             ResourceGroupName = rg.Name,
             Location = location,
             Sku = new Pulumi.AzureNative.Storage.Inputs.SkuArgs
@@ -59,6 +63,7 @@ class Program
         // SQL Server
         var sqlServer = new Server($"provision41-{env}-sql", new ServerArgs
         {
+            ServerName = sqlServerName,
             ResourceGroupName = rg.Name,
             Location = location,
             AdministratorLogin = sqlAdminUser,
@@ -68,6 +73,7 @@ class Program
 
         var sqlDb = new Database($"provision41-{env}-db", new DatabaseArgs
         {
+            DatabaseName = sqlDbName,
             Location = location,
             ResourceGroupName = rg.Name,
             ServerName = sqlServer.Name,
@@ -81,10 +87,10 @@ class Program
             DependsOn = { sqlServer } 
         });
 
-
         // Key Vault
         var kv = new Vault($"provision41{env}kv", new VaultArgs
         {
+            VaultName = kvName,
             ResourceGroupName = rg.Name,
             Location = location,
             Properties = new VaultPropertiesArgs
@@ -115,7 +121,7 @@ class Program
         });
 
         // Key Vault Secrets
-        var secretUser = new Secret("sqladminuser", new SecretArgs
+        var secretUser = new Secret("sqladminuser", new Pulumi.AzureNative.KeyVault.SecretArgs
         {
             ResourceGroupName = rg.Name,
             VaultName = kv.Name,
@@ -125,7 +131,7 @@ class Program
             }
         });
 
-        var secretPwd = new Secret($"sqladminpassword", new SecretArgs
+        var secretPwd = new Secret($"sqladminpassword", new Pulumi.AzureNative.KeyVault.SecretArgs
         {
             ResourceGroupName = rg.Name,
             VaultName = kv.Name,
@@ -135,7 +141,7 @@ class Program
             }
         });
 
-        var secretConnStr = new Secret($"sqlconnectionstring", new SecretArgs
+        var secretConnStr = new Secret($"sqlconnectionstring", new Pulumi.AzureNative.KeyVault.SecretArgs
         {
             ResourceGroupName = rg.Name,
             VaultName = kv.Name,
@@ -146,37 +152,75 @@ class Program
         });
 
         // App Service Plan
-        var appServicePlan = new Pulumi.AzureNative.Web.AppServicePlan($"provision41-{env}-plan", new Pulumi.AzureNative.Web.AppServicePlanArgs
+        var appServicePlan = new AppServicePlan("existing-service-plan", new AppServicePlanArgs
         {
-            Name = appPlanName,
             ResourceGroupName = rg.Name,
-            Location = location,
-            Kind = "App",
-            Sku = new Pulumi.AzureNative.Web.Inputs.SkuDescriptionArgs
+            Location = "Canada Central",
+            Name = "provision41-dev-sp",
+            Kind = "app",
+            Sku = new SkuDescriptionArgs
             {
-                Name = "B1",
-                Tier = "Basic"
-            }
+                Name = "F1",
+                Tier = "Free",
+                Size = "F1",
+                Family = "F",
+                Capacity = 0
+            },
+            IsSpot = false,
+            ElasticScaleEnabled = false,
+            MaximumElasticWorkerCount = null,
+            TargetWorkerCount = 0,
+            TargetWorkerSizeId = 0
+        }, new CustomResourceOptions
+        {
+            ImportId = "/subscriptions/2f35adf4-bda0-40da-ab3f-c8aa12a2d1f8/resourceGroups/provision41-dev-rg/providers/Microsoft.Web/serverfarms/provision41-dev-sp"
         });
 
         // Web App
-        var webApp = new Pulumi.AzureNative.Web.WebApp($"provision41-{env}-webapp", new Pulumi.AzureNative.Web.WebAppArgs
+        var webApp = new WebApp("provision41-dev-webapp", new WebAppArgs
         {
-            Name = webAppName,
             ResourceGroupName = rg.Name,
-            Location = location,
+            Location = "Canada Central",
+            Name = "provision41-dev-webapp",
             ServerFarmId = appServicePlan.Id,
-            SiteConfig = new Pulumi.AzureNative.Web.Inputs.SiteConfigArgs
+            Kind = "app",
+            HttpsOnly = true,
+            ClientAffinityEnabled = true,
+            ClientCertEnabled = false,
+            ClientCertMode = ClientCertMode.Required,
+            SiteConfig = new SiteConfigArgs
             {
-                AppSettings = new[]
+                AlwaysOn = false,
+                NetFrameworkVersion = "v8.0",
+                FtpsState = FtpsState.FtpsOnly,
+                Use32BitWorkerProcess = true,
+                MinTlsVersion = "1.2",
+                ScmType = "None",
+                NumberOfWorkers = 1,
+                WebSocketsEnabled = false,
+                Http20Enabled = false,
+                HttpLoggingEnabled = false,
+                DetailedErrorLoggingEnabled = false,
+                RequestTracingEnabled = false,
+                RemoteDebuggingEnabled = false,
+                VirtualApplications = 
                 {
-                    new Pulumi.AzureNative.Web.Inputs.NameValuePairArgs
+                    new VirtualApplicationArgs
                     {
-                        Name = "WEBSITE_RUN_FROM_PACKAGE",
-                        Value = "1"
+                        VirtualPath = "/",
+                        PhysicalPath = "site\\wwwroot",
+                        PreloadEnabled = false
                     }
                 }
-            }
+            },
+            KeyVaultReferenceIdentity = "SystemAssigned",
+            StorageAccountRequired = false,
+            HostNamesDisabled = false,
+            RedundancyMode = RedundancyMode.None,
+            PublicNetworkAccess = "Enabled"
+        }, new CustomResourceOptions
+        {
+            ImportId = "/subscriptions/2f35adf4-bda0-40da-ab3f-c8aa12a2d1f8/resourceGroups/provision41-dev-rg/providers/Microsoft.Web/sites/provision41-dev-webapp"
         });
 
         // Outputs
