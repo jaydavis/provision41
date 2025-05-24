@@ -1,0 +1,12 @@
+config:
+  provision41:environment: prod
+  azure-native:location: Central US
+  provision41:sqladminuser: sqladmin
+  provision41:sqladminuserpwd:
+    secure: AAABAMxHDTiYgPBVV7otx4kY2szxasyM7ZVsNzKXzXcsqR2MiH4YSnUYbtB34kwvSd+9cA==
+  provision41:tenantId: 469b7b58-bd29-4b05-8246-9567770f2588
+  provision41:sqladminpwd:
+    secure: AAABAIFQJb9lt0Fe/abwJMKfmmiYznue7K6NeqTh3Ff5SG8jOPlLfrZzzuGpbHQV7UOi/Q==
+  provision41:sqladminpassword:
+    secure: AAABANf48ZlUeVf7mRjoKPbJV7R3M6BYHSEjmb5u04t8R1S5rxc3T7qLDdbzm5JGvF0Pnw==
+  provision41:currentUserObjectId: 43243068-583b-48f1-8a64-aeef531ab376

@@ -1,2 +1,4 @@
 environment:
   - provision41/dev
+config:
+  provision41:currentUserObjectId: 43243068-583b-48f1-8a64-aeef531ab376

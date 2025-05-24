@@ -29,7 +29,7 @@ class Program
         var storageName = $"provision41{env}sa";
         var sqlServerName = $"provision41-{env}-sql";
         var sqlDbName = $"provision41-{env}-db";
-        var kvName = $"provision41{env}kv";
+        var kvName = $"provision41-{env}-kv";
         var appPlanName = $"provision41-{env}-sp";
         var webAppName = $"provision41-{env}-webapp";
 
@@ -88,7 +88,7 @@ class Program
         });
 
         // Key Vault
-        var kv = new Vault($"provision41{env}kv", new VaultArgs
+        var kv = new Vault($"provision41-{env}-kv", new VaultArgs
         {
             VaultName = kvName,
             ResourceGroupName = rg.Name,
@@ -104,7 +104,20 @@ class Program
                 EnabledForDeployment = true,
                 EnabledForTemplateDeployment = true,
                 EnabledForDiskEncryption = true,
-                AccessPolicies = {}
+                AccessPolicies =
+                {
+                    new AccessPolicyEntryArgs
+                    {
+                        TenantId = tenantId,
+                        ObjectId = config.Require("currentUserObjectId"),
+                        Permissions = new PermissionsArgs
+                        {
+                            Keys = { "get", "list", "create", "delete", "update", "import" },
+                            Secrets = { "get", "list", "set", "delete", "purge" },
+                            Certificates = { "get", "list", "create", "delete", "update" }
+                        }
+                    }
+                }
             }
         });
 
@@ -152,11 +165,11 @@ class Program
         });
 
         // App Service Plan
-        var appServicePlan = new AppServicePlan("existing-service-plan", new AppServicePlanArgs
+        var appServicePlan = new AppServicePlan(appPlanName, new AppServicePlanArgs
         {
             ResourceGroupName = rg.Name,
             Location = "Canada Central",
-            Name = "provision41-dev-sp",
+            Name = appPlanName,
             Kind = "app",
             Sku = new SkuDescriptionArgs
             {
@@ -164,30 +177,21 @@ class Program
                 Tier = "Free",
                 Size = "F1",
                 Family = "F",
-                Capacity = 0
-            },
-            IsSpot = false,
-            ElasticScaleEnabled = false,
-            MaximumElasticWorkerCount = null,
-            TargetWorkerCount = 0,
-            TargetWorkerSizeId = 0
-        }, new CustomResourceOptions
-        {
-            ImportId = "/subscriptions/2f35adf4-bda0-40da-ab3f-c8aa12a2d1f8/resourceGroups/provision41-dev-rg/providers/Microsoft.Web/serverfarms/provision41-dev-sp"
+                Capacity = 1
+            }
         });
 
         // Web App
-        var webApp = new WebApp("provision41-dev-webapp", new WebAppArgs
+        var webApp = new WebApp(webAppName, new WebAppArgs
         {
             ResourceGroupName = rg.Name,
             Location = "Canada Central",
-            Name = "provision41-dev-webapp",
+            Name = webAppName,
             ServerFarmId = appServicePlan.Id,
             Kind = "app",
             HttpsOnly = true,
             ClientAffinityEnabled = true,
             ClientCertEnabled = false,
-            ClientCertMode = ClientCertMode.Required,
             SiteConfig = new SiteConfigArgs
             {
                 AlwaysOn = false,
@@ -195,7 +199,6 @@ class Program
                 FtpsState = FtpsState.FtpsOnly,
                 Use32BitWorkerProcess = true,
                 MinTlsVersion = "1.2",
-                ScmType = "None",
                 NumberOfWorkers = 1,
                 WebSocketsEnabled = false,
                 Http20Enabled = false,
@@ -213,14 +216,10 @@ class Program
                     }
                 }
             },
-            KeyVaultReferenceIdentity = "SystemAssigned",
             StorageAccountRequired = false,
             HostNamesDisabled = false,
             RedundancyMode = RedundancyMode.None,
             PublicNetworkAccess = "Enabled"
-        }, new CustomResourceOptions
-        {
-            ImportId = "/subscriptions/2f35adf4-bda0-40da-ab3f-c8aa12a2d1f8/resourceGroups/provision41-dev-rg/providers/Microsoft.Web/sites/provision41-dev-webapp"
         });
 
         // Outputs
