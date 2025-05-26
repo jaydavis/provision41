@@ -3,12 +3,11 @@ using Pulumi.AzureNative.Resources;
 using Pulumi.AzureNative.Storage;
 using Pulumi.AzureNative.Storage.Inputs;
 using Pulumi.AzureNative.Sql;
-using Pulumi.AzureNative.Sql.Inputs;
+using SqlInputs = Pulumi.AzureNative.Sql.Inputs;
 using Pulumi.AzureNative.KeyVault;
-using Pulumi.AzureNative.KeyVault.Inputs;
+using KvInputs = Pulumi.AzureNative.KeyVault.Inputs;
 using Pulumi.AzureNative.Web;
-using Pulumi.AzureNative.Web.Inputs;
-
+using WebInputs = Pulumi.AzureNative.Web.Inputs;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -16,7 +15,7 @@ class Program
 {
     static Task<int> Main() => Pulumi.Deployment.RunAsync(() =>
     {
-        var env = Pulumi.Deployment.Instance.StackName; // "dev", "uat", "prod"
+        var env = Pulumi.Deployment.Instance.StackName;
 
         var config = new Config();
         var location = config.Get("location") ?? "EastUS";
@@ -24,7 +23,6 @@ class Program
         var sqlAdminUser = config.Require("sqladminuser");
         var sqlAdminPassword = config.RequireSecret("sqladminpassword");
 
-        // Names
         var rgName = $"provision41-{env}-rg";
         var storageName = $"provision41{env}sa";
         var sqlServerName = $"provision41-{env}-sql";
@@ -33,23 +31,18 @@ class Program
         var appPlanName = $"provision41-{env}-sp";
         var webAppName = $"provision41-{env}-webapp";
 
-        // Resource Group
-        var rg = new ResourceGroup($"provision41-{env}-rg", new ResourceGroupArgs
+        var rg = new ResourceGroup(rgName, new ResourceGroupArgs
         {
             ResourceGroupName = rgName,
             Location = location
         });
 
-        // Storage Account
-        var storage = new StorageAccount($"provision41{env}sa", new StorageAccountArgs
+        var storage = new StorageAccount(storageName, new StorageAccountArgs
         {
             AccountName = storageName,
             ResourceGroupName = rg.Name,
             Location = location,
-            Sku = new Pulumi.AzureNative.Storage.Inputs.SkuArgs
-            {
-                Name = Pulumi.AzureNative.Storage.SkuName.Standard_LRS
-            },
+            Sku = new SkuArgs { Name = Pulumi.AzureNative.Storage.SkuName.Standard_LRS },
             Kind = Kind.StorageV2
         });
 
@@ -60,8 +53,7 @@ class Program
             PublicAccess = PublicAccess.None
         });
 
-        // SQL Server
-        var sqlServer = new Server($"provision41-{env}-sql", new ServerArgs
+        var sqlServer = new Server(sqlServerName, new ServerArgs
         {
             ServerName = sqlServerName,
             ResourceGroupName = rg.Name,
@@ -71,46 +63,34 @@ class Program
             Version = "12.0"
         });
 
-        var sqlDb = new Database($"provision41-{env}-db", new DatabaseArgs
+        var sqlDb = new Database(sqlDbName, new DatabaseArgs
         {
             DatabaseName = sqlDbName,
             Location = location,
             ResourceGroupName = rg.Name,
             ServerName = sqlServer.Name,
-            Sku = new Pulumi.AzureNative.Sql.Inputs.SkuArgs
-            {
-                Name = "S0",
-                Tier = "Standard"
-            }
-        }, new CustomResourceOptions
-        {
-            DependsOn = { sqlServer } 
-        });
+            Sku = new SqlInputs.SkuArgs { Name = "S0", Tier = "Standard" }
+        }, new CustomResourceOptions { DependsOn = { sqlServer } });
 
-        // Key Vault
-        var kv = new Vault($"provision41-{env}-kv", new VaultArgs
+        var kv = new Vault(kvName, new VaultArgs
         {
             VaultName = kvName,
             ResourceGroupName = rg.Name,
             Location = location,
-            Properties = new VaultPropertiesArgs
+            Properties = new KvInputs.VaultPropertiesArgs
             {
                 TenantId = tenantId,
-                Sku = new Pulumi.AzureNative.KeyVault.Inputs.SkuArgs
-                {
-                    Name = Pulumi.AzureNative.KeyVault.SkuName.Standard,
-                    Family = "A"
-                },
+                Sku = new KvInputs.SkuArgs { Name = Pulumi.AzureNative.KeyVault.SkuName.Standard, Family = "A" },
                 EnabledForDeployment = true,
                 EnabledForTemplateDeployment = true,
                 EnabledForDiskEncryption = true,
                 AccessPolicies =
                 {
-                    new AccessPolicyEntryArgs
+                    new KvInputs.AccessPolicyEntryArgs
                     {
                         TenantId = tenantId,
                         ObjectId = config.Require("currentUserObjectId"),
-                        Permissions = new PermissionsArgs
+                        Permissions = new KvInputs.PermissionsArgs
                         {
                             Keys = { "get", "list", "create", "delete", "update", "import" },
                             Secrets = { "get", "list", "set", "delete", "purge" },
@@ -121,100 +101,55 @@ class Program
             }
         });
 
-        // SQL Connection String
-        var sqlConnectionString = Output.Tuple<string, string, string, string>(
-            sqlServer.FullyQualifiedDomainName,
-            sqlDb.Name,
-            sqlAdminUser,
-            sqlAdminPassword
-        ).Apply(t =>
-        {
-            (string fqdn, string dbName, string user, string pwd) = t;
-            return $"Server=tcp:{fqdn};Initial Catalog={dbName};User ID={user};Password={pwd};Encrypt=True;";
-        });
+        var sqlConnectionString = Output.Tuple<string, string, string, string>(sqlServer.FullyQualifiedDomainName, sqlDb.Name, sqlAdminUser, sqlAdminPassword)
+            .Apply(t => $"Server=tcp:{t.Item1};Initial Catalog={t.Item2};User ID={t.Item3};Password={t.Item4};Encrypt=True;");
 
-        // Key Vault Secrets
-        var secretUser = new Secret("sqladminuser", new Pulumi.AzureNative.KeyVault.SecretArgs
+        _ = new Secret("sqladminuser", new Pulumi.AzureNative.KeyVault.SecretArgs
         {
             ResourceGroupName = rg.Name,
             VaultName = kv.Name,
-            Properties = new SecretPropertiesArgs
-            {
-                Value = sqlAdminUser
-            }
+            Properties = new KvInputs.SecretPropertiesArgs { Value = sqlAdminUser }
         });
 
-        var secretPwd = new Secret($"sqladminpassword", new Pulumi.AzureNative.KeyVault.SecretArgs
+        _ = new Secret("sqladminpassword", new Pulumi.AzureNative.KeyVault.SecretArgs
         {
             ResourceGroupName = rg.Name,
             VaultName = kv.Name,
-            Properties = new SecretPropertiesArgs
-            {
-                Value = sqlAdminPassword
-            }
+            Properties = new KvInputs.SecretPropertiesArgs { Value = sqlAdminPassword }
         });
 
-        var secretConnStr = new Secret($"sqlconnectionstring", new Pulumi.AzureNative.KeyVault.SecretArgs
+        _ = new Secret("sqlconnectionstring", new Pulumi.AzureNative.KeyVault.SecretArgs
         {
             ResourceGroupName = rg.Name,
             VaultName = kv.Name,
-            Properties = new SecretPropertiesArgs
-            {
-                Value = sqlConnectionString
-            }
+            Properties = new KvInputs.SecretPropertiesArgs { Value = sqlConnectionString }
         });
 
-        // App Service Plan
         var appServicePlan = new AppServicePlan(appPlanName, new AppServicePlanArgs
         {
             ResourceGroupName = rg.Name,
-            Location = "Canada Central",
+            Location = "CanadaCentral",
             Name = appPlanName,
             Kind = "app",
-            Sku = new SkuDescriptionArgs
-            {
-                Name = "F1",
-                Tier = "Free",
-                Size = "F1",
-                Family = "F",
-                Capacity = 1
-            }
+            Sku = new WebInputs.SkuDescriptionArgs { Name = "B1", Tier = "Basic", Size = "B1", Family = "B", Capacity = 1 }
         });
 
-        // Web App
         var webApp = new WebApp(webAppName, new WebAppArgs
         {
             ResourceGroupName = rg.Name,
-            Location = "Canada Central",
+            Location = "CanadaCentral",
             Name = webAppName,
             ServerFarmId = appServicePlan.Id,
             Kind = "app",
             HttpsOnly = true,
-            ClientAffinityEnabled = true,
-            ClientCertEnabled = false,
-            SiteConfig = new SiteConfigArgs
+            SiteConfig = new WebInputs.SiteConfigArgs
             {
                 AlwaysOn = false,
                 NetFrameworkVersion = "v8.0",
                 FtpsState = FtpsState.FtpsOnly,
                 Use32BitWorkerProcess = true,
                 MinTlsVersion = "1.2",
-                NumberOfWorkers = 1,
-                WebSocketsEnabled = false,
-                Http20Enabled = false,
-                HttpLoggingEnabled = false,
-                DetailedErrorLoggingEnabled = false,
-                RequestTracingEnabled = false,
-                RemoteDebuggingEnabled = false,
-                VirtualApplications = 
-                {
-                    new VirtualApplicationArgs
-                    {
-                        VirtualPath = "/",
-                        PhysicalPath = "site\\wwwroot",
-                        PreloadEnabled = false
-                    }
-                }
+                NumberOfWorkers = 1
             },
             StorageAccountRequired = false,
             HostNamesDisabled = false,
@@ -222,7 +157,51 @@ class Program
             PublicNetworkAccess = "Enabled"
         });
 
-        // Outputs
+        var primaryDomain = env == "prod" ? "provision41.com" : $"dev.provision41.com";
+
+        var managedCert = new Certificate("managed-cert", new CertificateArgs
+        {
+            ResourceGroupName = rg.Name,
+            Location = "CanadaCentral",
+            ServerFarmId = appServicePlan.Id,
+            HostNames = { primaryDomain },
+            CanonicalName = primaryDomain
+        }, new CustomResourceOptions { DependsOn = { rg, webApp } });
+
+        _ = new WebAppHostNameBinding($"provision41-{env}-domain", new WebAppHostNameBindingArgs
+        {
+            Name = webApp.Name,
+            ResourceGroupName = rg.Name,
+            SiteName = webApp.Name,
+            HostName = primaryDomain,
+            CustomHostNameDnsRecordType = CustomHostNameDnsRecordType.CName,
+            SslState = SslState.SniEnabled,
+            Thumbprint = managedCert.Thumbprint
+        });
+
+        if (env == "prod")
+        {
+            var wwwCert = new Certificate("managed-cert-www", new CertificateArgs
+            {
+                ResourceGroupName = rg.Name,
+                Location = "CanadaCentral",
+                ServerFarmId = appServicePlan.Id,
+                HostNames = { "www.provision41.com" },
+                CanonicalName = "www.provision41.com"
+            }, new CustomResourceOptions { DependsOn = { rg, webApp } });
+
+            _ = new WebAppHostNameBinding("provision41-www-domain", new WebAppHostNameBindingArgs
+            {
+                Name = webApp.Name,
+                ResourceGroupName = rg.Name,
+                SiteName = webApp.Name,
+                HostName = "www.provision41.com",
+                CustomHostNameDnsRecordType = CustomHostNameDnsRecordType.CName,
+                SslState = SslState.SniEnabled,
+                Thumbprint = wwwCert.Thumbprint
+            });
+        }
+
         return new Dictionary<string, object?>
         {
             ["resourceGroup"] = rg.Name,
