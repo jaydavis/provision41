@@ -1,18 +1,23 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-namespace provision41.web.Models;
+using System;
 
-public class DumpLog
+namespace provision41.web.Models
 {
-    [Key]
-    public int Id { get; set; }
-    public string TruckId { get; set; }
+    public class DumpLog
+    {
+        public int Id { get; set; }
 
-    [ForeignKey("TruckId")]
-    public Truck Truck { get; set; }
+        public string? CompanyName { get; set; }
 
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-    public int CurrentCapacity { get; set; }
-    public string Comments { get; set; }
-    public string PhotoUrlsJson { get; set; }
+        public string? TruckId { get; set; }
+
+        public int MaxCapacity { get; set; }
+
+        public int CurrentCapacity { get; set; }
+
+        public string? Type { get; set; }
+
+        public string? Comments { get; set; }
+
+        public DateTime Timestamp { get; set; }
+    }
 }

@@ -31,6 +31,10 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+# Pulumi
+.pulumi/
+Pulumi.*.yaml
+
 # Visual Studio 2015/2017 cache/options directory
 .vs/
 # Uncomment if you have tasks that create the project's static files in wwwroot
@@ -171,6 +175,8 @@ DocProject/Help/html
 
 # Click-Once directory
 publish/
+publish-*/
+*.zip
 
 # Publish Web Output
 *.[Pp]ublish.xml
@@ -353,5 +359,5 @@ MigrationBackup/
 .ionide/
 
 notes.txt
-Provision41Web/appsettings.Development.json
+provision41web/appsettings.Development.json
 stuff/

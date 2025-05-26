@@ -10,3 +10,4 @@ config:
   provision41:sqladminpassword:
     secure: AAABANf48ZlUeVf7mRjoKPbJV7R3M6BYHSEjmb5u04t8R1S5rxc3T7qLDdbzm5JGvF0Pnw==
   provision41:currentUserObjectId: 43243068-583b-48f1-8a64-aeef531ab376
+  provision41:subscriptionId: 2f35adf4-bda0-40da-ab3f-c8aa12a2d1f8

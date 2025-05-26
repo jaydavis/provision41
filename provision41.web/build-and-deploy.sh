@@ -9,6 +9,7 @@ if [ -z "$1" ]; then
 fi
 
 ENV="$1"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Configs per environment
 if [ "$ENV" == "dev" ]; then
@@ -35,9 +36,12 @@ fi
 
 echo "🔧 Building for $ENV..."
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PUBLISH_DIR="$SCRIPT_DIR/publish-$ENV"
 ZIP_FILE="$SCRIPT_DIR/publish-$ENV.zip"
+
+# Clean previous publish output
+rm -rf "$PUBLISH_DIR"
+mkdir -p "$PUBLISH_DIR"
 
 # Build
 dotnet publish "$SCRIPT_DIR/provision41.web.csproj" -c Release -o "$PUBLISH_DIR"
@@ -45,6 +49,7 @@ dotnet publish "$SCRIPT_DIR/provision41.web.csproj" -c Release -o "$PUBLISH_DIR"
 # Zip
 echo "📦 Creating zip file..."
 cd "$PUBLISH_DIR"
+[ -f "$ZIP_FILE" ] && rm "$ZIP_FILE"
 zip -r "$ZIP_FILE" .
 cd "$SCRIPT_DIR"
 

@@ -4,92 +4,93 @@
     ViewData["Title"] = "Dump Log";
 }
 
-<div class="container mt-4">
+<div class="container py-5">
     <div class="text-center mb-4">
-        <h2 class="fw-bold">🚛 Provision41 Disaster Recovery</h2>
+        <h2 class="fw-bold text-primary">🚛 Provision41 Disaster Recovery</h2>
         <p class="text-muted">Dump Log Form</p>
     </div>
 
-    <form method="post" enctype="multipart/form-data">
-        <h4 id="formHeader" class="text-primary mb-4"></h4>
-        <input type="hidden" asp-for="Id" />
-
-        <div class="row mb-3">
-            <label class="col-4 col-form-label">Date:</label>
-            <div class="col-8">
-                <input type="text" class="form-control" value="@Model.Timestamp" readonly />
-            </div>
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white fw-semibold">
+            Dump Log Entry
         </div>
+        <div class="card-body">
+            <form method="post" asp-page="/Dr/Dumplog" enctype="multipart/form-data">
 
-        <div class="row mb-3">
-            <label asp-for="CompanyName" class="col-4 col-form-label">Company Name:</label>
-            <div class="col-8">
-                <input asp-for="CompanyName" class="form-control" />
-            </div>
-        </div>
+                @Html.AntiForgeryToken()
+                <h4 id="formHeader" class="text-primary mb-4"></h4>
+                <input type="hidden" asp-for="Id" />
 
-        <div class="row mb-3">
-            <label asp-for="TruckId" class="col-4 col-form-label">Truck ID:</label>
-            <div class="col-8">
-                <input asp-for="TruckId" class="form-control" />
-            </div>
-        </div>
-
-        <div class="row mb-3">
-            <label asp-for="MaxCapacity" class="col-4 col-form-label">Max Capacity:</label>
-            <div class="col-8">
-                <input asp-for="MaxCapacity" type="number" class="form-control" />
-            </div>
-        </div>
-
-        <div class="row mb-3">
-            <label asp-for="CurrentCapacity" class="col-4 col-form-label">Current Capacity (%):</label>
-            <div class="col-8">
-                <div class="input-group">
-                    <input asp-for="CurrentCapacity" type="number" min="0" max="100" class="form-control" id="currentCapacityInput" />
-                    <span class="input-group-text">%</span>
+                <div class="mb-3">
+                    <label class="form-label">Date:</label>
+                    <input type="text" class="form-control" value="@Model.Timestamp" readonly />
                 </div>
-                <div id="currentCapacityLbs" class="form-text text-muted mt-1" style="display: none;"></div>
-            </div>
-        </div>
-        <div class="row mb-3 align-items-center">
-            <label class="col-4 col-form-label">Type:</label>
-            <div class="col-8 d-flex gap-3">
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" asp-for="Type" value="C&D" />
-                    <label class="form-check-label">C&D</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" asp-for="Type" value="VEG" />
-                    <label class="form-check-label">VEG</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" asp-for="Type" value="HAZMAT" />
-                    <label class="form-check-label">HAZMAT</label>
-                </div>
-            </div>
-        </div>
 
-        <div class="row mb-3">
-            <label asp-for="Comments" class="col-4 col-form-label">Comments:</label>
-            <div class="col-8">
-                <textarea asp-for="Comments" class="form-control" rows="3"></textarea>
-            </div>
-        </div>
+                <div class="mb-3">
+                    <label asp-for="CompanyName" class="form-label">Company Name:</label>
+                    <input asp-for="CompanyName" class="form-control" />
+                </div>
 
-        <div class="row mb-4">
-            <label asp-for="UploadedFiles" class="col-4 col-form-label">Upload Photos:</label>
-            <div class="col-8">
-                <input asp-for="UploadedFiles" type="file" multiple class="form-control" />
-            </div>
-        </div>
+                <div class="mb-3">
+                    <label asp-for="TruckId" class="form-label">Truck ID:</label>
+                    <input asp-for="TruckId" class="form-control" />
+                </div>
 
-        <div class="row">
-            <div class="offset-4 col-8">
-                <button type="submit" class="btn btn-primary w-100">Save Entry</button>
-            </div>
+                <div class="mb-3">
+                    <label asp-for="MaxCapacity" class="form-label">Max Capacity:</label>
+                    <input asp-for="MaxCapacity" type="number" class="form-control" />
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="CurrentCapacity" class="form-label">Current Capacity (%):</label>
+                    <div class="input-group">
+                        <input asp-for="CurrentCapacity" type="number" min="0" max="100" class="form-control" id="currentCapacityInput" />
+                        <span class="input-group-text">%</span>
+                    </div>
+                    <div id="currentLoadOutput" class="form-text text-success mt-2" style="display: none;"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Type:</label>
+                    <div class="d-flex gap-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" asp-for="Type" value="C&D" />
+                            <label class="form-check-label">C&D</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" asp-for="Type" value="VEG" />
+                            <label class="form-check-label">VEG</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" asp-for="Type" value="HAZMAT" />
+                            <label class="form-check-label">HAZMAT</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Comments" class="form-label">Comments:</label>
+                    <textarea asp-for="Comments" class="form-control" rows="3"></textarea>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="UploadedFiles" class="form-label">Upload Photos:</label>
+                    <input asp-for="UploadedFiles" type="file" multiple class="form-control" />
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">Save Entry</button>
+                </div>
+            </form>
         </div>
-    </form>
+    </div>
+
+    <footer class="mt-5 text-muted text-center">
+        &copy; 2025 Provision41Web - <a asp-area="" asp-page="/Privacy">Privacy</a>
+    </footer>
+</div>
+
+@section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const maxCapacityInput = document.querySelector('input[name="MaxCapacity"]');
@@ -129,9 +130,8 @@
             if (initialTruckId) {
                 truckIdInput.value = initialTruckId;
                 truckIdInput.readOnly = true;
-                truckIdInput.classList.add('bg-light'); // optional: gray out visually
+                truckIdInput.classList.add('bg-light');
             }
-
 
             updateHeader(initialTruckId);
 
@@ -142,5 +142,4 @@
             currentCapacityInput.addEventListener('blur', updateLoadDisplay);
         });
     </script>
-
-</div>
+}
