@@ -15,7 +15,7 @@ public class IndexModel : PageModel
     }
 
     [BindProperty(SupportsGet = true)]
-    public string Id { get; set; }
+    public int Id { get; set; }
 
     [BindProperty]
     public Truck Truck { get; set; }
