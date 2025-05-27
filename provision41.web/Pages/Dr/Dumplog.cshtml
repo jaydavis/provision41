@@ -15,7 +15,7 @@
             Dump Log Entry
         </div>
         <div class="card-body">
-            <form method="post" asp-page="/Dr/Dumplog" enctype="multipart/form-data">
+            <form method="post" enctype="multipart/form-data">
 
                 @Html.AntiForgeryToken()
                 <h4 id="formHeader" class="text-primary mb-4"></h4>
@@ -23,7 +23,7 @@
 
                 <div class="mb-3">
                     <label class="form-label">Date:</label>
-                    <input type="text" class="form-control" value="@Model.Timestamp" readonly />
+                    <input type="text" asp-for="Timestamp" class="form-control" value="@Model.Timestamp" readonly />
                 </div>
 
                 <div class="mb-3">
@@ -32,8 +32,8 @@
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="TruckId" class="form-label">Truck ID:</label>
-                    <input asp-for="TruckId" class="form-control" />
+                    <label asp-for="CompanyTruckId" class="form-label">Company Truck ID:</label>
+                    <input asp-for="CompanyTruckId" class="form-control" />
                 </div>
 
                 <div class="mb-3">

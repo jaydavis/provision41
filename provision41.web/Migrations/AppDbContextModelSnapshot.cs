@@ -22,6 +22,27 @@ namespace Provision41.Web.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Truck", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CompanyTruckId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("MaxCapacity")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Trucks");
+                });
+
             modelBuilder.Entity("provision41.web.Models.DumpLog", b =>
                 {
                     b.Property<int>("Id")
@@ -45,54 +66,15 @@ namespace Provision41.Web.Migrations
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("TruckId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Type")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TruckId");
-
-                    b.ToTable("DumpLogs");
-                });
-
-            modelBuilder.Entity("provision41.web.Models.Truck", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("CompanyName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("MaxCapacity")
+                    b.Property<int>("TruckId")
                         .HasColumnType("int");
 
-                    b.Property<string>("TruckNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Type")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Trucks");
-                });
-
-            modelBuilder.Entity("provision41.web.Models.DumpLog", b =>
-                {
-                    b.HasOne("provision41.web.Models.Truck", null)
-                        .WithMany("DumpLogs")
-                        .HasForeignKey("TruckId");
-                });
-
-            modelBuilder.Entity("provision41.web.Models.Truck", b =>
-                {
-                    b.Navigation("DumpLogs");
+                    b.ToTable("DumpLogs");
                 });
 #pragma warning restore 612, 618
         }

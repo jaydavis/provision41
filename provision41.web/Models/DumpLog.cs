@@ -1,14 +1,18 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace provision41.web.Models
 {
     public class DumpLog
     {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-
         public string? CompanyName { get; set; }
 
-        public string? TruckId { get; set; }
+        [Required]
+        public int TruckId { get; set; }
 
         public int MaxCapacity { get; set; }
 
