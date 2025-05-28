@@ -132,7 +132,7 @@ namespace provision41.web.Pages
                 }
 
                 var bytes = Encoding.UTF8.GetBytes(csv.ToString());
-                Response.Headers.ContentDisposition = "attachment; filename=dumplog-report.csv";
+                return File(bytes, "text/csv", "dumplog-report.csv");
                 return File(bytes, "text/csv");
             }
 

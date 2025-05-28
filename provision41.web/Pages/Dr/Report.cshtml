@@ -63,7 +63,15 @@
 
     <!-- Summary and Export -->
     <p class="fw-semibold mt-3">Showing @Model.TotalCount result@(Model.TotalCount == 1 ? "" : "s")</p>
-    <a asp-page="/Report" asp-route-export="csv" class="btn btn-outline-success mb-3">📤 Export CSV</a>
+    <a asp-page="/Report"
+    asp-route-TruckIdFilter="@Model.TruckIdFilter"
+    asp-route-TypeFilter="@Model.TypeFilter"
+    asp-route-StartDate="@(Model.StartDate?.ToString("yyyy-MM-dd"))"
+    asp-route-EndDate="@(Model.EndDate?.ToString("yyyy-MM-dd"))"
+    asp-route-export="csv"
+    class="btn btn-outline-success mb-3">
+    📤 Export CSV
+    </a>
 
     <!-- Report Table -->
     <table class="table table-bordered table-hover mt-2">
