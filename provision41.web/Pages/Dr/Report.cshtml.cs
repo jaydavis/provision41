@@ -7,6 +7,10 @@ using Azure.Security.KeyVault.Secrets;
 using Azure.Identity;
 using Azure.Storage.Blobs;
 using System.Text;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+
 
 namespace provision41.web.Pages
 {
@@ -133,7 +137,83 @@ namespace provision41.web.Pages
 
                 var bytes = Encoding.UTF8.GetBytes(csv.ToString());
                 return File(bytes, "text/csv", "dumplog-report.csv");
-                return File(bytes, "text/csv");
+            }
+
+            if (Export?.ToLowerInvariant() == "pdf")
+            {
+                var allEntries = new List<DumpLogReportViewModel>();
+
+                foreach (var entry in joined)
+                {
+                    bool hasImages = false;
+                    await foreach (var blob in containerClient.GetBlobsAsync(prefix: $"log-{entry.DumpLogId}/"))
+                    {
+                        hasImages = true;
+                        break;
+                    }
+
+                    allEntries.Add(new DumpLogReportViewModel
+                    {
+                        DumpLogId = entry.DumpLogId,
+                        Date = entry.Timestamp,
+                        TruckId = entry.TruckId,
+                        MaxCapacity = entry.MaxCapacity,
+                        Type = entry.Type,
+                        ActualCapacity = entry.CurrentCapacity,
+                        HasImages = hasImages
+                    });
+                }
+
+                var pdf = QuestPDF.Fluent.Document.Create(container =>
+                {
+                    container.Page(page =>
+                    {
+                        page.Margin(30);
+                        page.Header().Text("Dump Log Report").FontSize(20).Bold().AlignCenter();
+                        page.Content().Table(table =>
+                        {
+                            table.ColumnsDefinition(columns =>
+                            {
+                                columns.RelativeColumn(1);
+                                columns.RelativeColumn(1);
+                                columns.RelativeColumn(1);
+                                columns.RelativeColumn(1);
+                                columns.RelativeColumn(1);
+                                columns.RelativeColumn(1);
+                                columns.RelativeColumn(1);
+                            });
+
+                            table.Header(header =>
+                            {
+                                header.Cell().Element(CellStyle).Text("Date");
+                                header.Cell().Element(CellStyle).Text("Time");
+                                header.Cell().Element(CellStyle).Text("Truck ID");
+                                header.Cell().Element(CellStyle).Text("Max Capacity");
+                                header.Cell().Element(CellStyle).Text("Type");
+                                header.Cell().Element(CellStyle).Text("Actual");
+                                header.Cell().Element(CellStyle).Text("Has Images");
+                            });
+
+                            foreach (var item in allEntries)
+                            {
+                                table.Cell().Element(CellStyle).Text(item.Date.ToShortDateString());
+                                table.Cell().Element(CellStyle).Text(item.Time);
+                                table.Cell().Element(CellStyle).Text(item.TruckId.ToString());
+                                table.Cell().Element(CellStyle).Text(item.MaxCapacity.ToString());
+                                table.Cell().Element(CellStyle).Text(item.Type);
+                                table.Cell().Element(CellStyle).Text(item.ActualCapacity.ToString());
+                                table.Cell().Element(CellStyle).Text(item.HasImages ? "Yes" : "No");
+                            }
+
+                            IContainer CellStyle(IContainer container) =>
+                                container.PaddingVertical(4).PaddingHorizontal(2).BorderBottom(1).BorderColor("#CCC");
+                        });
+                    });
+                });
+
+                using var ms = new MemoryStream();
+                pdf.GeneratePdf(ms);
+                return File(ms.ToArray(), "application/pdf", "dumplog-report.pdf");
             }
 
             // Pagination
