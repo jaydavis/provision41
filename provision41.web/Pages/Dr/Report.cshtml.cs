@@ -1,0 +1,171 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
+using provision41.web.Data;
+using provision41.web.ViewModels;
+using Azure.Security.KeyVault.Secrets;
+using Azure.Identity;
+using Azure.Storage.Blobs;
+using System.Text;
+
+namespace provision41.web.Pages
+{
+    public class ReportModel : PageModel
+    {
+        private readonly AppDbContext _context;
+        public ReportModel(AppDbContext context) => _context = context;
+        public List<DumpLogReportViewModel> ReportEntries { get; set; } = [];
+        public int PageSize { get; set; } = 10;
+        public int TotalCount { get; set; }
+        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
+        public List<int> TruckIdOptions { get; set; } = [];
+        public List<string> TypeOptions { get; set; } = [];
+
+        [BindProperty(SupportsGet = true)]
+        public int? TruckIdFilter { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string? TypeFilter { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public DateTime? StartDate { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public DateTime? EndDate { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string? Export { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int PageNumber { get; set; } = 1;
+
+
+        public async Task<IActionResult> OnGetAsync()
+        {
+            // Load blob container
+            var kvName = Environment.GetEnvironmentVariable("KeyVaultName");
+            var secretClient = new SecretClient(new Uri($"https://{kvName}.vault.azure.net/"), new DefaultAzureCredential());
+            var accountName = (await secretClient.GetSecretAsync("blobstorageaccountname")).Value.Value;
+
+            var blobServiceClient = new BlobServiceClient(new Uri($"https://{accountName}.blob.core.windows.net"), new DefaultAzureCredential());
+            var containerClient = blobServiceClient.GetBlobContainerClient("uploads");
+
+            TruckIdOptions = await _context.Trucks
+                .Select(t => t.Id)
+                .Distinct()
+                .OrderBy(id => id)
+                .ToListAsync();
+
+            TypeOptions = await _context.DumpLogs
+                .Select(dl => dl.Type)
+                .Where(type => type != null && type != "")
+                .Distinct()
+                .OrderBy(type => type)
+                .ToListAsync();
+
+            // Build query with filters
+            var query = _context.DumpLogs
+                .Join(_context.Trucks,
+                      dl => dl.TruckId,
+                      t => t.Id,
+                      (dl, t) => new
+                      {
+                          DumpLogId = dl.Id,
+                          dl.Timestamp,
+                          TruckId = t.Id,
+                          t.MaxCapacity,
+                          dl.Type,
+                          dl.CurrentCapacity
+                      })
+                .AsQueryable();
+
+            if (TruckIdFilter.HasValue)
+                query = query.Where(x => x.TruckId == TruckIdFilter.Value);
+
+            if (!string.IsNullOrWhiteSpace(TypeFilter))
+                query = query.Where(x => x.Type == TypeFilter);
+
+            if (StartDate.HasValue)
+                query = query.Where(x => x.Timestamp >= StartDate.Value);
+
+            if (EndDate.HasValue)
+                query = query.Where(x => x.Timestamp <= EndDate.Value);
+
+            var joined = await query
+                .OrderByDescending(x => x.Timestamp)
+                .ToListAsync();
+
+            TotalCount = joined.Count;
+
+            // CSV export (before pagination)
+            if (Export?.ToLowerInvariant() == "csv")
+            {
+                var allEntries = new List<DumpLogReportViewModel>();
+
+                foreach (var entry in joined)
+                {
+                    bool hasImages = false;
+                    await foreach (var blob in containerClient.GetBlobsAsync(prefix: $"log-{entry.DumpLogId}/"))
+                    {
+                        hasImages = true;
+                        break;
+                    }
+
+                    allEntries.Add(new DumpLogReportViewModel
+                    {
+                        DumpLogId = entry.DumpLogId,
+                        Date = entry.Timestamp,
+                        TruckId = entry.TruckId,
+                        MaxCapacity = entry.MaxCapacity,
+                        Type = entry.Type,
+                        ActualCapacity = entry.CurrentCapacity,
+                        HasImages = hasImages
+                    });
+                }
+
+                var csv = new StringBuilder();
+                csv.AppendLine("Date,Time,TruckId,MaxCapacity,Type,ActualCapacity,HasImages");
+
+                foreach (var item in allEntries)
+                {
+                    csv.AppendLine($"{item.Date:yyyy-MM-dd},{item.Time},{item.TruckId},{item.MaxCapacity},{item.Type},{item.ActualCapacity},{item.HasImages}");
+                }
+
+                var bytes = Encoding.UTF8.GetBytes(csv.ToString());
+                Response.Headers.ContentDisposition = "attachment; filename=dumplog-report.csv";
+                return File(bytes, "text/csv");
+            }
+
+            // Pagination
+            var paged = joined
+                .Skip((PageNumber - 1) * PageSize)
+                .Take(PageSize)
+                .ToList();
+
+            ReportEntries = new();
+
+            foreach (var entry in paged)
+            {
+                bool hasImages = false;
+                await foreach (var blob in containerClient.GetBlobsAsync(prefix: $"log-{entry.DumpLogId}/"))
+                {
+                    hasImages = true;
+                    break;
+                }
+
+                ReportEntries.Add(new DumpLogReportViewModel
+                {
+                    DumpLogId = entry.DumpLogId,
+                    Date = entry.Timestamp,
+                    TruckId = entry.TruckId,
+                    MaxCapacity = entry.MaxCapacity,
+                    Type = entry.Type,
+                    ActualCapacity = entry.CurrentCapacity,
+                    HasImages = hasImages
+                });
+            }
+
+            return Page();
+        }
+    }
+}

@@ -49,12 +49,27 @@ class Program
             Kind = Kind.StorageV2
         });
 
+        var blobConnectionString = Output.Tuple<string, string>(
+            storage.Name,
+            storage.PrimaryEndpoints.Apply(e => e.Blob)
+        ).Apply(t =>
+            $"DefaultEndpointsProtocol=https;AccountName={t.Item1};EndpointSuffix=core.windows.net;BlobEndpoint={t.Item2};"
+        );
+
         var container = new BlobContainer("uploads", new BlobContainerArgs
         {
             AccountName = storage.Name,
             ResourceGroupName = rg.Name,
             PublicAccess = PublicAccess.None
         });
+
+        var storageKeys = ListStorageAccountKeys.Invoke(new ListStorageAccountKeysInvokeArgs
+        {
+            AccountName = storage.Name,
+            ResourceGroupName = rg.Name
+        });
+
+        var storageKey = storageKeys.Apply(keys => keys.Keys[0].Value);
 
         var sqlServer = new Server(sqlServerName, new ServerArgs
         {
@@ -214,6 +229,34 @@ class Program
             Properties = new KvInputs.SecretPropertiesArgs { Value = sqlConnectionString }
         });
 
+        _ = new Secret("blobconnectionstring", new Pulumi.AzureNative.KeyVault.SecretArgs
+        {
+            ResourceGroupName = rg.Name,
+            VaultName = kv.Apply(v => v.Name),
+            Properties = new KvInputs.SecretPropertiesArgs { Value = blobConnectionString }
+        });
+
+        _ = new Secret("blobstorageaccountname", new Pulumi.AzureNative.KeyVault.SecretArgs
+        {
+            ResourceGroupName = rg.Name,
+            VaultName = kv.Apply(v => v.Name),
+            Properties = new KvInputs.SecretPropertiesArgs
+            {
+                Value = storage.Name.Apply(name => name)
+            }
+        });
+
+        _ = new Secret("blobstorageaccountkey", new SecretArgs
+        {
+            ResourceGroupName = rg.Name,
+            VaultName = kv.Apply(v => v.Name),
+            Properties = new KvInputs.SecretPropertiesArgs
+            {
+                Value = storageKey
+            }
+        });
+
+
         _ = new WebAppApplicationSettings("provision41-app-settings", new WebAppApplicationSettingsArgs
         {
             Name = webApp.Name,
@@ -224,6 +267,14 @@ class Program
             }
         });
 
+        _ = webApp.Identity.Apply(identity => new RoleAssignment("blob-role", new RoleAssignmentArgs
+        {
+            PrincipalId = identity!.PrincipalId!,
+            PrincipalType = "ServicePrincipal",
+            RoleDefinitionId = $"/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe", // Storage Blob Data Contributor
+            Scope = storage.Id
+        }));
+        
         var primaryDomain = env == "prod" ? "provision41.com" : $"dev.provision41.com";
 
         var managedCert = new Certificate("managed-cert", new CertificateArgs

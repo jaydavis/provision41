@@ -1,0 +1,122 @@
+@page
+@model provision41.web.Pages.ReportModel
+@{
+    ViewData["Title"] = "Dump Log Report";
+}
+
+<div class="container py-5">
+    <h2 class="text-primary">📊 Dump Log Report</h2>
+
+    <!-- Filter Form -->
+    <form method="get" class="mb-4">
+        <div class="row g-2">
+            <div class="col-md-2">
+                <label class="form-label">Truck ID</label>
+                <select name="TruckIdFilter" class="form-select">
+                    <option value="">All</option>
+                    @foreach (var id in Model.TruckIdOptions)
+                    {
+                        <option value="@id" selected="@(Model.TruckIdFilter == id ? "selected" : null)">@id</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Type</label>
+                <select name="TypeFilter" class="form-select">
+                    <option value="">All</option>
+                    @foreach (var type in Model.TypeOptions)
+                    {
+                        <option value="@type" selected="@(Model.TypeFilter == type ? "selected" : null)">@type</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Start Date</label>
+                <input type="date" name="StartDate" value="@Model.StartDate?.ToString("yyyy-MM-dd")" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">End Date</label>
+                <input type="date" name="EndDate" value="@Model.EndDate?.ToString("yyyy-MM-dd")" class="form-control" />
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <a href="/Report" class="btn btn-secondary w-100">Clear</a>
+            </div>
+        </div>
+    </form>
+
+    <!-- Active Filters Summary -->
+    @if (Model.TruckIdFilter.HasValue || !string.IsNullOrWhiteSpace(Model.TypeFilter) || Model.StartDate.HasValue || Model.EndDate.HasValue)
+    {
+        <div class="alert alert-info">
+            <strong>Filters applied:</strong>
+            <ul class="mb-0">
+                @if (Model.TruckIdFilter.HasValue) { <li>Truck ID: <strong>@Model.TruckIdFilter</strong></li> }
+                @if (!string.IsNullOrWhiteSpace(Model.TypeFilter)) { <li>Type: <strong>@Model.TypeFilter</strong></li> }
+                @if (Model.StartDate.HasValue) { <li>Start: <strong>@Model.StartDate.Value.ToShortDateString()</strong></li> }
+                @if (Model.EndDate.HasValue) { <li>End: <strong>@Model.EndDate.Value.ToShortDateString()</strong></li> }
+            </ul>
+        </div>
+    }
+
+    <!-- Summary and Export -->
+    <p class="fw-semibold mt-3">Showing @Model.TotalCount result@(Model.TotalCount == 1 ? "" : "s")</p>
+    <a asp-page="/Report" asp-route-export="csv" class="btn btn-outline-success mb-3">📤 Export CSV</a>
+
+    <!-- Report Table -->
+    <table class="table table-bordered table-hover mt-2">
+        <thead class="table-light">
+            <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Truck ID</th>
+                <th>Max Capacity</th>
+                <th>Type</th>
+                <th>Actual Capacity</th>
+                <th>Images</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.ReportEntries)
+        {
+            <tr>
+                <td>@item.Date.ToShortDateString()</td>
+                <td>@item.Time</td>
+                <td>@item.TruckId</td>
+                <td>@item.MaxCapacity</td>
+                <td>@item.Type</td>
+                <td>@item.ActualCapacity</td>
+                <td>
+                    @if (item.HasImages)
+                    {
+                        <a asp-page="/Dr/DumplogImages" asp-route-id="@item.DumpLogId">Images</a>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <nav>
+            <ul class="pagination justify-content-center">
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(Model.PageNumber == i ? "active" : "")">
+                        <a class="page-link" href="@Url.Page("/Report", new {
+                            PageNumber = i,
+                            TruckIdFilter = Model.TruckIdFilter,
+                            TypeFilter = Model.TypeFilter,
+                            StartDate = Model.StartDate?.ToString("yyyy-MM-dd"),
+                            EndDate = Model.EndDate?.ToString("yyyy-MM-dd")
+                        })">@i</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+</div>

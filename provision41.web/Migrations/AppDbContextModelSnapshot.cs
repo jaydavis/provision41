@@ -28,11 +28,9 @@ namespace Provision41.Web.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("CompanyName")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CompanyTruckId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("MaxCapacity")
@@ -54,13 +52,7 @@ namespace Provision41.Web.Migrations
                     b.Property<string>("Comments")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("CompanyName")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("CurrentCapacity")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MaxCapacity")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("Timestamp")
@@ -70,6 +62,7 @@ namespace Provision41.Web.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Type")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");

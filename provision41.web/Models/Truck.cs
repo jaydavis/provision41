@@ -7,7 +7,7 @@ public class Truck
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public int Id { get; set; }
 
-    public string CompanyName { get; set; } = "";
-    public string CompanyTruckId { get; set; } = "";
+    public string? CompanyName { get; set; }
+    public string? CompanyTruckId { get; set; }
     public int MaxCapacity { get; set; }
 }

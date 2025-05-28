@@ -2,7 +2,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using provision41.web.Data;
 using provision41.web.Models;
-using Microsoft.EntityFrameworkCore;
+using Azure.Storage.Blobs;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
+using Azure.Core;
+
 
 namespace Provision41Web.Pages.Dr;
 
@@ -22,10 +26,10 @@ public class DumplogModel : PageModel
     public string Timestamp { get; set; } = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
 
     [BindProperty]
-    public string CompanyName { get; set; } = "";
+    public string? CompanyName { get; set; }
 
     [BindProperty]
-    public string CompanyTruckId { get; set; } = "";
+    public string? CompanyTruckId { get; set; }
 
     [BindProperty]
     public int MaxCapacity { get; set; }
@@ -37,7 +41,7 @@ public class DumplogModel : PageModel
     public string Type { get; set; } = "";
 
     [BindProperty]
-    public string Comments { get; set; } = "";
+    public string? Comments { get; set; }
 
     [BindProperty]
     public IFormFileCollection? UploadedFiles { get; set; }
@@ -94,21 +98,29 @@ public class DumplogModel : PageModel
             {
                 truck = new Truck
                 {
-                    Id = Id, 
-                    CompanyName = CompanyName,
-                    CompanyTruckId = CompanyTruckId,
+                    Id = Id,
+                    CompanyName = string.IsNullOrWhiteSpace(CompanyName) ? "Not Provided" : CompanyName,
+                    CompanyTruckId = string.IsNullOrWhiteSpace(CompanyTruckId) ? "Not Provided" : CompanyTruckId,
                     MaxCapacity = MaxCapacity
                 };
                 _context.Trucks.Add(truck);
-                await _context.SaveChangesAsync();
             }
+            else
+            {
+                // Update existing truck details
+                truck.CompanyName = string.IsNullOrWhiteSpace(CompanyName) ? "Not Provided" : CompanyName;
+                truck.CompanyTruckId = string.IsNullOrWhiteSpace(CompanyTruckId) ? "Not Provided" : CompanyTruckId;
+                truck.MaxCapacity = MaxCapacity;
+                
+                _context.Trucks.Update(truck);
+            }
+                
+            await _context.SaveChangesAsync();
 
             // Save the dump log
             var log = new DumpLog
             {
-                CompanyName = CompanyName ?? "",
                 TruckId = truck.Id,
-                MaxCapacity = MaxCapacity,
                 CurrentCapacity = CurrentCapacity,
                 Type = Type,
                 Comments = Comments,
@@ -118,8 +130,40 @@ public class DumplogModel : PageModel
             _context.DumpLogs.Add(log);
             await _context.SaveChangesAsync();
 
+            if (UploadedFiles is { Count: > 0 })
+            {
+                // Get Key Vault name from environment variable or WebApp settings
+                var kvName = Environment.GetEnvironmentVariable("KeyVaultName");
+                if (string.IsNullOrWhiteSpace(kvName))
+                    throw new Exception("KeyVaultName environment variable not set");
+
+                var kvUri = $"https://{kvName}.vault.azure.net/";
+                var client = new SecretClient(new Uri(kvUri), new DefaultAzureCredential());
+
+                var storageAccountSecret = await client.GetSecretAsync("blobstorageaccountname");
+                var storageAccountName = storageAccountSecret.Value.Value;
+
+                var blobServiceClient = new BlobServiceClient(
+                    new Uri($"https://{storageAccountName}.blob.core.windows.net"),
+                    new DefaultAzureCredential());
+
+                var containerClient = blobServiceClient.GetBlobContainerClient("uploads");
+
+                foreach (var file in UploadedFiles)
+                {
+                    if (file.Length > 0)
+                    {
+                        var blobName = $"log-{log.Id}/{Path.GetFileName(file.FileName)}";
+                        var blobClient = containerClient.GetBlobClient(blobName);
+                        using var stream = file.OpenReadStream();
+                        await blobClient.UploadAsync(stream, overwrite: true);
+                    }
+                }
+            }
+
             Console.WriteLine("✅ DumpLog successfully saved.");
-            return RedirectToPage("/Index");
+            return RedirectToPage("/Dr/DumpLogResult", new { id = log.Id });
+
         }
         catch (Exception ex)
         {

@@ -1,0 +1,21 @@
+@page "/dr/dumplogimages"
+@model Provision41Web.Pages.Dr.DumplogImagesModel
+@{
+    ViewData["Title"] = "Images for Dump Log";
+}
+
+<h2>Images for Dump Log #@Model.Id</h2>
+
+@if (Model.ImageUrls.Count == 0)
+{
+    <p>No images found.</p>
+}
+else
+{
+    @foreach (var url in Model.ImageUrls)
+    {
+        <div class="mb-4">
+            <img src="@url" class="w-100 border rounded" style="max-width: 100%; height: auto;" alt="Dump image" />
+        </div>
+    }
+}

@@ -1,0 +1,51 @@
+@page "/dr/dumplogresult"
+@model Provision41Web.Pages.Dr.DumpLogResultModel
+@{
+    ViewData["Title"] = "Dump Log Submitted";
+}
+
+<div class="container py-5">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold text-success">✅ Dump Log Submitted</h2>
+        <p class="text-muted">Here’s what was recorded:</p>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info text-white fw-semibold">Truck Info</div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Company Name</dt>
+                <dd class="col-sm-9">@Model.Truck.CompanyName</dd>
+
+                <dt class="col-sm-3">Truck ID</dt>
+                <dd class="col-sm-9">@Model.Truck.CompanyTruckId</dd>
+
+                <dt class="col-sm-3">Max Capacity</dt>
+                <dd class="col-sm-9">@Model.Truck.MaxCapacity lbs</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Truck ID</dt>
+                <dd class="col-sm-9">@Model.DumpLog.TruckId</dd>
+
+                <dt class="col-sm-3">Type</dt>
+                <dd class="col-sm-9">@Model.DumpLog.Type</dd>
+
+                <dt class="col-sm-3">Current Capacity</dt>
+                <dd class="col-sm-9">@Model.DumpLog.CurrentCapacity lbs</dd>
+
+                <dt class="col-sm-3">Comments</dt>
+                <dd class="col-sm-9">@Model.DumpLog.Comments</dd>
+
+                <dt class="col-sm-3">Timestamp</dt>
+                <dd class="col-sm-9">@Model.DumpLog.Timestamp.ToString("g")</dd>
+            </dl>
+
+            <button class="btn btn-secondary d-none" id="printButton" onclick="window.print()">Print</button>
+        </div>
+    </div>
+</div>

@@ -43,7 +43,7 @@ public class IndexModel : PageModel
             _db.Trucks.Add(Truck);
         }
 
-        DumpLog.TruckId = Truck.Id;
+        DumpLog.TruckId = Id;
         _db.DumpLogs.Add(DumpLog);
 
         await _db.SaveChangesAsync();
