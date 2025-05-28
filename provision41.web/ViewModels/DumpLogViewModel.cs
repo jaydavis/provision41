@@ -5,6 +5,8 @@ namespace provision41.web.ViewModels
         public DateTime Date { get; set; }
         public string Time => Date.ToString("hh:mm tt");
         public int TruckId { get; set; }
+        public string CompanyName { get; set; } = "";
+        public string CompanyTruckId { get; set; } = "";
         public int MaxCapacity { get; set; }
         public string Type { get; set; } = "";
         public int ActualCapacity { get; set; }

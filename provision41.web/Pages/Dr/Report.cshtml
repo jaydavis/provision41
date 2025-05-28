@@ -83,38 +83,46 @@
     </a>
 
     <!-- Report Table -->
-    <table class="table table-bordered table-hover mt-2">
-        <thead class="table-light">
-            <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Truck ID</th>
-                <th>Max Capacity</th>
-                <th>Type</th>
-                <th>Actual Capacity</th>
-                <th>Images</th>
-            </tr>
-        </thead>
-        <tbody>
-        @foreach (var item in Model.ReportEntries)
-        {
-            <tr>
-                <td>@item.Date.ToShortDateString()</td>
-                <td>@item.Time</td>
-                <td>@item.TruckId</td>
-                <td>@item.MaxCapacity</td>
-                <td>@item.Type</td>
-                <td>@item.ActualCapacity</td>
-                <td>
-                    @if (item.HasImages)
-                    {
-                        <a asp-page="/Dr/DumplogImages" asp-route-id="@item.DumpLogId">Images</a>
-                    }
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
+    <div class="="table-responsive">
+        <table class="table table-bordered table-hover mt-2">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Truck ID</th>
+                    <th>Company Name</th> <!-- NEW -->
+                    <th>Company Truck ID</th> <!-- NEW -->
+                    <th>Max Capacity</th>
+                    <th>Type</th>
+                    <th>% of Load</th>
+                    <th>Weight</th>
+                    <th>Images</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in Model.ReportEntries)
+            {
+                <tr>
+                    <td>@item.Date.ToShortDateString()</td>
+                    <td>@item.Time</td>
+                    <td>@item.TruckId</td>
+                    <td>@item.CompanyName</td>
+                    <td>@item.CompanyTruckId</td>
+                    <td>@item.MaxCapacity</td>
+                    <td>@item.Type</td>
+                    <td>@item.ActualCapacity</td>
+                    <td>@(item.MaxCapacity * item.ActualCapacity /100)</td>
+                    <td>
+                        @if (item.HasImages)
+                        {
+                            <a asp-page="/Dr/DumplogImages" asp-route-id="@item.DumpLogId">Images</a>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
 
     <!-- Pagination -->
     @if (Model.TotalPages > 1)
