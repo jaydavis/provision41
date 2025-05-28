@@ -63,7 +63,24 @@
 
     <!-- Summary and Export -->
     <p class="fw-semibold mt-3">Showing @Model.TotalCount result@(Model.TotalCount == 1 ? "" : "s")</p>
-    <a asp-page="/Report" asp-route-export="csv" class="btn btn-outline-success mb-3">📤 Export CSV</a>
+    <a asp-page="/Dr/Report"
+        asp-route-TruckIdFilter="@Model.TruckIdFilter"
+        asp-route-TypeFilter="@Model.TypeFilter"
+        asp-route-StartDate="@(Model.StartDate?.ToString("yyyy-MM-dd"))"
+        asp-route-EndDate="@(Model.EndDate?.ToString("yyyy-MM-dd"))"
+        asp-route-export="csv"
+        class="btn btn-outline-success mb-3">
+        📤 Export CSV
+    </a>
+    <a asp-page="/Dr/Report"
+        asp-route-TruckIdFilter="@Model.TruckIdFilter"
+        asp-route-TypeFilter="@Model.TypeFilter"
+        asp-route-StartDate="@(Model.StartDate?.ToString("yyyy-MM-dd"))"
+        asp-route-EndDate="@(Model.EndDate?.ToString("yyyy-MM-dd"))"
+        asp-route-export="pdf"
+        class="btn btn-outline-danger mb-3 ms-2">
+        📄 Export PDF
+    </a>
 
     <!-- Report Table -->
     <table class="table table-bordered table-hover mt-2">
@@ -107,13 +124,15 @@
                 @for (int i = 1; i <= Model.TotalPages; i++)
                 {
                     <li class="page-item @(Model.PageNumber == i ? "active" : "")">
-                        <a class="page-link" href="@Url.Page("/Report", new {
-                            PageNumber = i,
-                            TruckIdFilter = Model.TruckIdFilter,
-                            TypeFilter = Model.TypeFilter,
-                            StartDate = Model.StartDate?.ToString("yyyy-MM-dd"),
-                            EndDate = Model.EndDate?.ToString("yyyy-MM-dd")
-                        })">@i</a>
+                        <a class="page-link"
+                        asp-page="/Dr/Report"
+                        asp-route-PageNumber="@i"
+                        asp-route-TruckIdFilter="@Model.TruckIdFilter"
+                        asp-route-TypeFilter="@Model.TypeFilter"
+                        asp-route-StartDate="@(Model.StartDate?.ToString("yyyy-MM-dd"))"
+                        asp-route-EndDate="@(Model.EndDate?.ToString("yyyy-MM-dd"))">
+                            @i
+                        </a>
                     </li>
                 }
             </ul>
