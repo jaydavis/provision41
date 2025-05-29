@@ -13,6 +13,10 @@ namespace provision41.web.ViewModels
         public double Percentage => MaxCapacity == 0 ? 0 : Math.Round((double)ActualCapacity / MaxCapacity * 100, 2);
         public bool HasImages { get; set; } = false;
         public int DumpLogId { get; set; }
-        
+        public class WeightSummary
+        {
+            public string Type { get; set; } = "";
+            public double TotalWeight { get; set; }
+        }        
     }
 }

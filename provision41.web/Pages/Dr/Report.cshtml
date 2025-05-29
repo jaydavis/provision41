@@ -146,4 +146,24 @@
             </ul>
         </nav>
     }
+    <hr />
+    <h4 class="mt-4 text-primary">📦 Summary by Type</h4>
+    <table class="table table-sm table-bordered w-auto">
+        <thead class="table-light">
+            <tr>
+                <th>Type</th>
+                <th>Total Weight</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var summary in Model.WeightSummaries)
+        {
+            <tr>
+                <td>@summary.Type</td>
+                <td>@summary.TotalWeight.ToString("N2")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
 </div>
